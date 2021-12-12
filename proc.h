@@ -56,6 +56,7 @@ struct proc {
   float cycles;                // Cycles
   int effective_ratio;
   int hrrnp;
+  uint last_exec;
 
 };
 
