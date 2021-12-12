@@ -227,6 +227,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->queue_num = LCFS;
 
   release(&ptable.lock);
 
@@ -320,6 +321,20 @@ wait(void)
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
+  }
+}
+void
+aging(void)
+{
+  struct proc* p = 0;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  { 
+    if (p->state != RUNNABLE || p->queue_num == ROUND_ROBIN)
+      continue;
+
+    if (ticks - p->last_exec > (8000*p->cycles)) 
+      p->queue_num = ROUND_ROBIN;
   }
 }
 
@@ -418,6 +433,7 @@ scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
+   // print_all_information();
     acquire(&ptable.lock);
     p=roundRobin();
     if(!p)
@@ -503,6 +519,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  myproc()->last_exec = ticks;
   myproc()->cycles+=1;
   sched();
   release(&ptable.lock);
