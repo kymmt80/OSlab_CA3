@@ -328,11 +328,14 @@ aging(void)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   { 
+    p->waiting+=1;
     if (p->state != RUNNABLE || p->queue_num == ROUND_ROBIN)
       continue;
 
-    if (ticks - p->last_exec > (8000)) 
+    if (p->waiting > (8000)) {
       p->queue_num = ROUND_ROBIN;
+      p->waiting=0;
+    }
   }
 }
 
@@ -449,7 +452,7 @@ scheduler(void)
     c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-
+      p->waiting=0;
       swtch(&(c->scheduler), p->context);
       switchkvm();
       c->proc = 0;
@@ -721,6 +724,7 @@ change_process_queue(int pid, int queue_num)
     if (p->pid == pid)
     {
       p->queue_num = queue_num;
+      p->waiting=0;
       break;
     }
   }
