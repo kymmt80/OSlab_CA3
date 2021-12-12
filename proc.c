@@ -350,6 +350,31 @@ lcfs(void)
   return lastp;
 }
 
+struct proc*
+mhrrn(void)
+{  
+  float max_mhrrn = 0;
+
+  struct proc *p;
+  struct proc *lastp = 0;
+  float hrrn_val,mhrrn_val,waiting_time;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+      if (p->state != RUNNABLE || p->queue != MHRRN)
+        continue;
+      waiting_time=ticks-p->arrival;
+      hrrn_val=(waiting_time+ (p->cycles))/waiting_time;
+      mhrrn_val=(hrrn_val+p->hrrnp)/2;
+      if (mhrrn_val > max_mhrrn)
+      {
+        lastp = p;
+        max_mhrrn=mhrrn_val;
+      }
+  }
+  return lastp;
+}
+
 
 void
 scheduler(void)
@@ -697,4 +722,27 @@ print_all_information()
   }
   release(&ptable.lock);
   
+}
+
+void 
+set_hrrn_for_process(int pid,int coef)
+{
+  struct proc *p;  //current process
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p -> pid == pid){
+      p->hrrnp=coef;
+      break;
+    }
+  } 
+  return 0;
+}
+
+void
+set_hrrn_for_system(int coef)
+{
+  struct proc *p;  //current process
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    p->hrrnp=coef;
+  } 
+  return 0;
 }

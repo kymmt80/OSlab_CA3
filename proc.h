@@ -53,6 +53,7 @@ struct proc {
   int arrival;                 // Arrival time
   float cycles;                // Cycles
   int effective_ratio;
+  int hrrnp;
 
 };
 
@@ -63,3 +64,4 @@ struct proc {
 //   expandable heap
 
 #define LCFS 2
+#define MHRRN 3
