@@ -797,7 +797,7 @@ print_all_information()
     float mhrrn_val=(hrrn_val+p->hrrnp)/2;
 
     cprintf("%d", (int)mhrrn_val);
-    print_space(7 - int_len(p->cycles));
+    print_space(7 - int_len((int)mhrrn_val));
 
     cprintf("%d", p->hrrnp);
     cprintf("\n");
