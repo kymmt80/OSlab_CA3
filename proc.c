@@ -88,11 +88,12 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->queue_num=ROUND_ROBIN;
-  p->hrrnp=0;
+  p->queue_num= (p->pid>3)? LCFS:ROUND_ROBIN;
+  p->hrrnp=1;
   p->arrival=ticks;
   p->cycles=1;
-  p->robin_turn=curr_robin++;
+  p->robin_turn=ticks;
+  p->last_exec=ticks;
 
   acquire(&tickslock);
   p->robin_turn = ticks;
@@ -209,9 +210,6 @@ fork(void)
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
-    if (curproc->pid == 1 || curproc->pid == 2 || curproc->pid == 3)
-      np->queue_num = ROUND_ROBIN;
-
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
@@ -227,7 +225,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-  np->queue_num = LCFS;
+  //np->queue_num = LCFS;
 
   release(&ptable.lock);
 
@@ -333,7 +331,7 @@ aging(void)
     if (p->state != RUNNABLE || p->queue_num == ROUND_ROBIN)
       continue;
 
-    if (ticks - p->last_exec > (8000*p->cycles)) 
+    if (ticks - p->last_exec > (8000)) 
       p->queue_num = ROUND_ROBIN;
   }
 }
@@ -445,6 +443,9 @@ scheduler(void)
       continue;
       //p=ptable.proc;
     }
+
+    aging();
+
     c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -752,15 +753,15 @@ print_all_information()
   print_space(3);
 
   cprintf("arrival");
-  print_space(2);
-
-  cprintf("effective_ratio");
-  print_space(2);
+  print_space(7);
 
   cprintf("cycle");
   print_space(2);
-  
+
   cprintf("MHRRN");
+  print_space(2);
+  
+  cprintf("HRRN_coef");
   print_space(2);
 
   cprintf("\n");
@@ -788,13 +789,16 @@ print_all_information()
     cprintf("%d", p->arrival);
     print_space(13 - int_len(p->arrival));
 
-    cprintf("%d", p->effective_ratio);
-    print_space(12 - int_len(p->effective_ratio));
-
     cprintf("%d", p->cycles);
     print_space(7 - int_len(p->cycles));
 
-    int mhrrn = 0;
+    float waiting_time=ticks-p->arrival;
+    float hrrn_val=(waiting_time+ (p->cycles))/waiting_time;
+    float mhrrn_val=(hrrn_val+p->hrrnp)/2;
+
+    cprintf("%d", (int)mhrrn_val);
+    print_space(7 - int_len(p->cycles));
+
     cprintf("%d", p->hrrnp);
     cprintf("\n");
   }
@@ -806,12 +810,14 @@ int
 set_hrrn_for_process(int pid,int coef)
 {
   struct proc *p;  //current process
+  acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p -> pid == pid){
       p->hrrnp=coef;
       break;
     }
   } 
+  release(&ptable.lock);
   return 0;
 }
 
@@ -819,8 +825,10 @@ int
 set_hrrn_for_system(int coef)
 {
   struct proc *p;  //current process
+  acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     p->hrrnp=coef;
   } 
+  release(&ptable.lock);
   return 0;
 }

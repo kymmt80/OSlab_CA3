@@ -53,7 +53,7 @@ struct proc {
   int queue_num;                   // Process queue number
   int queue;                   // Process queue number
   int arrival;                 // Arrival time
-  float cycles;                // Cycles
+  int cycles;                // Cycles
   int effective_ratio;
   int hrrnp;
   uint last_exec;
