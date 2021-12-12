@@ -89,3 +89,33 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_set_hrrn_for_system(void){
+  int inp;
+  if(argint(0, &inp) < 0)
+    return -1;
+  set_hrrn_for_system(inp);
+}
+int
+sys_set_hrrn_for_process(void){
+  int inp,pid;
+  if(argint(0, &pid) < 0)
+    return -1;
+  if(argint(1, &inp) < 0)
+    return -1;
+  set_hrrn_for_process(pid,inp);
+}
+int
+sys_print_all_information(void){
+  print_all_information();
+}
+int
+sys_change_process_queue(void){
+  int inp,pid;
+  if(argint(0, &pid) < 0)
+    return -1;
+  if(argint(1, &inp) < 0)
+    return -1;
+  change_process_queue(pid,inp);
+}

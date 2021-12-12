@@ -120,6 +120,10 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             set_hrrn_for_system(int);
+int             set_hrrn_for_process(int,int);
+int             print_all_information(void);
+int             change_process_queue(int,int);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

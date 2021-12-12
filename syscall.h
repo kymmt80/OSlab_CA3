@@ -20,3 +20,7 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+#define SYS_set_hrrn_for_system 22
+#define SYS_set_hrrn_for_process 23
+#define SYS_print_all_information 24
+#define SYS_change_process_queue 25

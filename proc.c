@@ -13,7 +13,7 @@ struct {
 } ptable;
 
 static struct proc *initproc;
-
+int curr_robin=0;
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
@@ -88,6 +88,11 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->queue_num=ROUND_ROBIN;
+  p->hrrnp=0;
+  p->arrival=ticks;
+  p->cycles=1;
+  p->robin_turn=curr_robin++;
 
   acquire(&tickslock);
   p->robin_turn = ticks;
@@ -204,6 +209,9 @@ fork(void)
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
+    if (curproc->pid == 1 || curproc->pid == 2 || curproc->pid == 3)
+      np->queue_num = ROUND_ROBIN;
+
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
@@ -219,6 +227,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->queue_num = LCFS;
 
   release(&ptable.lock);
 
@@ -360,7 +369,7 @@ lcfs(void)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-      if (p->state != RUNNABLE || p->queue != LCFS)
+      if (p->state != RUNNABLE || p->queue_num != LCFS)
         continue;
 
       if (p->arrival > last_time)
@@ -383,7 +392,7 @@ mhrrn(void)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-      if (p->state != RUNNABLE || p->queue != MHRRN)
+      if (p->state != RUNNABLE || p->queue_num != MHRRN)
         continue;
       waiting_time=ticks-p->arrival;
       hrrn_val=(waiting_time+ (p->cycles))/waiting_time;
@@ -409,23 +418,24 @@ scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
+    print_all_information();
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
+    p=roundRobin();
+    if(!p)
+      p=lcfs();
+    if(!p)
+      p=mhrrn();
+    if(!p){
+      release(&ptable.lock);
+      continue;
+      //p=ptable.proc;
+    }
+    c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
       c->proc = 0;
       if (p->state == RUNNABLE && p->queue_num == ROUND_ROBIN)
       {
@@ -433,7 +443,30 @@ scheduler(void)
           p->robin_turn = ticks;
           //release(&tickslock);
       }
-    }
+    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    //   if(p->state != RUNNABLE)
+    //     continue;
+
+    //   // Switch to chosen process.  It is the process's job
+    //   // to release ptable.lock and then reacquire it
+    //   // before jumping back to us.
+    //   c->proc = p;
+    //   switchuvm(p);
+    //   p->state = RUNNING;
+
+    //   swtch(&(c->scheduler), p->context);
+    //   switchkvm();
+
+    //   // Process is done running for now.
+    //   // It should have changed its p->state before coming back.
+    //   c->proc = 0;
+    //   if (p->state == RUNNABLE && p->queue_num == ROUND_ROBIN)
+    //   {
+    //       //acquire(&tickslock);
+    //       p->robin_turn = ticks;
+    //       //release(&tickslock);
+    //   }
+    // }
     release(&ptable.lock);
 
   }
@@ -471,6 +504,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  myproc()->cycles+=1;
   sched();
   release(&ptable.lock);
 }
@@ -658,7 +692,7 @@ get_state_name(int state)
 }
 
 
-void
+int
 change_process_queue(int pid, int queue_num)
 {
   struct proc *p;
@@ -669,21 +703,22 @@ change_process_queue(int pid, int queue_num)
   {
     if (p->pid == pid)
     {
-      p->queue = queue_num;
+      p->queue_num = queue_num;
       break;
     }
   }
   release(&ptable.lock);
+  return 0;
 }
 
 void 
 print_space(int n)
 {
   for (int i = 0 ; i < n ; i++)
-    cprintf(SPACE);
+    cprintf(" ");
 }
 
-void 
+int
 print_all_information()
 {
   struct proc *p;
@@ -744,14 +779,14 @@ print_all_information()
     print_space(7 - int_len(p->cycles));
 
     int mhrrn = 0;
-    cprintf("%d", mhrrn);
+    cprintf("%d", p->hrrnp);
     cprintf("\n");
   }
   release(&ptable.lock);
-  
+  return 0;
 }
 
-void 
+int
 set_hrrn_for_process(int pid,int coef)
 {
   struct proc *p;  //current process
@@ -764,7 +799,7 @@ set_hrrn_for_process(int pid,int coef)
   return 0;
 }
 
-void
+int
 set_hrrn_for_system(int coef)
 {
   struct proc *p;  //current process
