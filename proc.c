@@ -227,7 +227,6 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
-  np->queue_num = LCFS;
 
   release(&ptable.lock);
 
@@ -397,6 +396,7 @@ mhrrn(void)
       waiting_time=ticks-p->arrival;
       hrrn_val=(waiting_time+ (p->cycles))/waiting_time;
       mhrrn_val=(hrrn_val+p->hrrnp)/2;
+      cprintf("%f\n",mhrrn_val);
       if (mhrrn_val > max_mhrrn)
       {
         lastp = p;
@@ -418,7 +418,6 @@ scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
-    print_all_information();
     acquire(&ptable.lock);
     p=roundRobin();
     if(!p)
