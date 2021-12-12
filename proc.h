@@ -49,6 +49,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int robin_turn;
+  int queue_num;                   // Process queue number
   int queue;                   // Process queue number
   int arrival;                 // Arrival time
   float cycles;                // Cycles
@@ -62,6 +64,6 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
-
+#define ROUND_ROBIN 1
 #define LCFS 2
 #define MHRRN 3

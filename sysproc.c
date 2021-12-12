@@ -89,18 +89,3 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
-
-void
-sys_change_process_queue(void)
-{
-  int pid, queue_num;
-  argint(0, &pid);
-  argint(1, &queue_num);
-  change_process_queue(pid, queue_num);
-}
-
-void
-sys_print_all_information(void)
-{
-  print_all_information();
-}
