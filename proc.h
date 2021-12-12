@@ -53,7 +53,7 @@ struct proc {
   int arrival;                 // Arrival time
   float cycles;                // Cycles
   int effective_ratio;
-
+  int robin_turn;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -63,3 +63,4 @@ struct proc {
 //   expandable heap
 
 #define LCFS 2
+#define ROUND_ROBIN 1

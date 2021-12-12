@@ -93,6 +93,7 @@ found:
 
   acquire(&tickslock);
   p->arrival = ticks;
+  p->robin_turn = ticks;
   release(&tickslock);
   
   p->effective_ratio = 0;
@@ -320,6 +321,34 @@ wait(void)
   }
 }
 
+struct proc*
+roundRobin(void)
+{
+  struct proc *p;
+  struct proc *target_proc;
+  int has_proc = 0;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != RUNNABLE || p->queue != ROUND_ROBIN)
+        continue;
+    if(has_proc)
+    {
+        if(p->robin_turn < target_proc->robin_turn)
+          target_proc = p;
+    }
+    else
+    {
+        target_proc = p;
+        has_proc = 1;
+    }
+  }
+
+  if(has_proc)
+    return target_proc;
+
+  return 0;
+}
+
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -381,6 +410,12 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
+      if (p->state == RUNNABLE && p->queue == ROUND_ROBIN)
+      {
+          //acquire(&tickslock);
+          p->robin_turn = ticks;
+          //release(&tickslock);
+      }
     }
     release(&ptable.lock);
 
