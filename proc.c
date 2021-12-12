@@ -766,8 +766,8 @@ print_all_information()
     cprintf(get_state_name(p->state));
     print_space(15 - strlen(get_state_name(p->state)));
 
-    cprintf("%d", p->queue);
-    print_space(12 - int_len(p->queue));
+    cprintf("%d", p->queue_num);
+    print_space(12 - int_len(p->queue_num));
 
     cprintf("%d", p->arrival);
     print_space(13 - int_len(p->arrival));
