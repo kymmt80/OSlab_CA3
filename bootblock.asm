@@ -326,8 +326,8 @@ readseg(uchar* pa, uint count, uint offset)
     7d96:	8b 7b 0c             	mov    0xc(%ebx),%edi
     readseg(pa, ph->filesz, ph->off);
     7d99:	83 ec 04             	sub    $0x4,%esp
-    7d9c:	ff 73 04             	push   0x4(%ebx)
-    7d9f:	ff 73 10             	push   0x10(%ebx)
+    7d9c:	ff 73 04             	pushl  0x4(%ebx)
+    7d9f:	ff 73 10             	pushl  0x10(%ebx)
     7da2:	57                   	push   %edi
     7da3:	e8 4c ff ff ff       	call   7cf4 <readseg>
     if(ph->memsz > ph->filesz)

@@ -49,11 +49,9 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int queue;                   // Process queue number
-  int arrival;                 // Arrival time
-  float cycles;                // Cycles
-  int effective_ratio;
   int robin_turn;
+  int queue_num;                   // Process queue number
+
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -61,6 +59,4 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
-
-#define LCFS 2
 #define ROUND_ROBIN 1
