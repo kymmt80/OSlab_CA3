@@ -350,6 +350,53 @@ roundRobin(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+struct proc*
+lcfs(void)
+{  
+  int last_time = 0;
+
+  struct proc *p;
+  struct proc *lastp = 0;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+      if (p->state != RUNNABLE || p->queue != LCFS)
+        continue;
+
+      if (p->arrival > last_time)
+      {
+        lastp = p;
+        last_time = p->arrival;
+      }
+  }
+  return lastp;
+}
+
+struct proc*
+mhrrn(void)
+{  
+  float max_mhrrn = 0;
+
+  struct proc *p;
+  struct proc *lastp = 0;
+  float hrrn_val,mhrrn_val,waiting_time;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+      if (p->state != RUNNABLE || p->queue != MHRRN)
+        continue;
+      waiting_time=ticks-p->arrival;
+      hrrn_val=(waiting_time+ (p->cycles))/waiting_time;
+      mhrrn_val=(hrrn_val+p->hrrnp)/2;
+      if (mhrrn_val > max_mhrrn)
+      {
+        lastp = p;
+        max_mhrrn=mhrrn_val;
+      }
+  }
+  return lastp;
+}
+
 void
 scheduler(void)
 {
@@ -568,4 +615,161 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int
+int_len(int n)
+{
+  int len = 0;
+
+  if(n == 0)
+    return 1;
+    
+  while (n > 0) {
+    len++;
+    n = n / 10;
+  }
+  return len;
+}
+
+char*
+get_state_name(int state)
+{
+  if (state == 0) 
+    return "UNUSED";
+  
+  else if (state == 1) 
+    return "EMBRYO";
+  
+  else if (state == 2) 
+    return "SLEEPING";
+  
+  else if (state == 3) 
+    return "RUNNABLE";
+  
+  else if (state == 4) 
+    return "RUNNING";
+  
+  else if (state == 5) 
+    return "ZOMBIE";
+
+  else 
+    return "";
+}
+
+
+void
+change_process_queue(int pid, int queue_num)
+{
+  struct proc *p;
+
+  acquire(&ptable.lock);
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      p->queue = queue_num;
+      break;
+    }
+  }
+  release(&ptable.lock);
+}
+
+void 
+print_space(int n)
+{
+  for (int i = 0 ; i < n ; i++)
+    cprintf(SPACE);
+}
+
+void 
+print_all_information()
+{
+  struct proc *p;
+
+  cprintf("name");
+  print_space(3);
+
+  cprintf("pid");
+  print_space(5);
+
+  cprintf("state");
+  print_space(4);
+
+  cprintf("queue_level");
+  print_space(3);
+
+  cprintf("arrival");
+  print_space(2);
+
+  cprintf("effective_ratio");
+  print_space(2);
+
+  cprintf("cycle");
+  print_space(2);
+  
+  cprintf("MHRRN");
+  print_space(2);
+
+  cprintf("\n");
+  for (int i = 0 ; i < 80 ; i++)
+    cprintf(".");
+  cprintf("\n");
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){ 
+    if (p->state == UNUSED)
+      continue;
+
+    cprintf(p->name);
+    print_space(8 - strlen(p->name));
+
+    cprintf("%d", p->pid);
+    print_space(6 - int_len(p->pid));
+
+    cprintf(get_state_name(p->state));
+    print_space(15 - strlen(get_state_name(p->state)));
+
+    cprintf("%d", p->queue);
+    print_space(12 - int_len(p->queue));
+
+    cprintf("%d", p->arrival);
+    print_space(13 - int_len(p->arrival));
+
+    cprintf("%d", p->effective_ratio);
+    print_space(12 - int_len(p->effective_ratio));
+
+    cprintf("%d", p->cycles);
+    print_space(7 - int_len(p->cycles));
+
+    int mhrrn = 0;
+    cprintf("%d", mhrrn);
+    cprintf("\n");
+  }
+  release(&ptable.lock);
+  
+}
+
+void 
+set_hrrn_for_process(int pid,int coef)
+{
+  struct proc *p;  //current process
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p -> pid == pid){
+      p->hrrnp=coef;
+      break;
+    }
+  } 
+  return 0;
+}
+
+void
+set_hrrn_for_system(int coef)
+{
+  struct proc *p;  //current process
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    p->hrrnp=coef;
+  } 
+  return 0;
 }
